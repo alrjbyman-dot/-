@@ -58,6 +58,33 @@ jobs:
           }
           EOF
           npx cap add android
+          npm install --no-save sharp
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const sharp = require('sharp');
+          (async () => {
+            const svg = fs.readFileSync('icon.svg');
+            const sizes = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
+            for (const [density, size] of Object.entries(sizes)) {
+              const dir = path.join('android/app/src/main/res', 'mipmap-' + density);
+              fs.mkdirSync(dir, { recursive: true });
+              await sharp(svg).resize(size, size).png().toFile(path.join(dir, 'ic_launcher.png'));
+              await sharp(svg).resize(size, size).png().toFile(path.join(dir, 'ic_launcher_round.png'));
+            }
+            const adaptive = path.join('android/app/src/main/res/mipmap-anydpi-v26');
+            for (const name of ['ic_launcher.xml', 'ic_launcher_round.xml']) {
+              try { fs.unlinkSync(path.join(adaptive, name)); } catch (_) {}
+            }
+            const manifestPath = 'android/app/src/main/AndroidManifest.xml';
+            let manifest = fs.readFileSync(manifestPath, 'utf8');
+            if (!manifest.includes('android:screenOrientation="landscape"')) {
+              manifest = manifest.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:screenOrientation="landscape"');
+            }
+            fs.writeFileSync(manifestPath, manifest);
+            console.log('Custom launcher icons installed; Android orientation locked to landscape.');
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
       - name: Build APK
         run: |
           cd android
