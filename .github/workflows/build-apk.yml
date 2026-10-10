@@ -30,18 +30,18 @@ jobs:
           cp index.html www/index.html
           cat > package.json <<'EOF'
           {
-            "name": "void-runner-last-stand",
+            "name": "empire-of-ash-kingdom",
             "version": "1.0.0",
             "private": true,
-            "description": "Void Runner: Last Stand - mobile survival roguelite",
+            "description": "Empire of Ash - mobile survival roguelite",
             "scripts": { "build": "mkdir -p www && cp index.html www/index.html" }
           }
           EOF
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           cat > capacitor.config.json <<'EOF'
           {
-            "appId": "com.voidrunner.laststand",
-            "appName": "Void Runner",
+            "appId": "com.empireofash.kingdom",
+            "appName": "Empire of Ash",
             "webDir": "www",
             "server": { "androidScheme": "https" }
           }
@@ -55,7 +55,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: void-runner-android-apk
+          name: empire-of-ash-android-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
@@ -63,9 +63,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-build-${{ github.run_number }}
-          name: Void Runner APK build ${{ github.run_number }}
+          name: Empire of Ash APK build ${{ github.run_number }}
           body: |
-            Void Runner: Last Stand Android APK.
+            Empire of Ash Android APK.
             Download the APK asset below and install it on your Android phone.
             This is an automatically built debug APK.
           files: android/app/build/outputs/apk/debug/app-debug.apk
