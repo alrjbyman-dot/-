@@ -1,0 +1,71 @@
+name: Build Android APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout game
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Prepare Capacitor Android wrapper
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          cat > package.json <<'EOF'
+          {
+            "name": "void-runner-last-stand",
+            "version": "1.0.0",
+            "private": true,
+            "description": "Void Runner: Last Stand - mobile survival roguelite",
+            "scripts": { "build": "mkdir -p www && cp index.html www/index.html" }
+          }
+          EOF
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.voidrunner.laststand",
+            "appName": "Void Runner",
+            "webDir": "www",
+            "server": { "androidScheme": "https" }
+          }
+          EOF
+          npx cap add android
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-runner-android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish APK download release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-build-${{ github.run_number }}
+          name: Void Runner APK build ${{ github.run_number }}
+          body: |
+            Void Runner: Last Stand Android APK.
+            Download the APK asset below and install it on your Android phone.
+            This is an automatically built debug APK.
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
